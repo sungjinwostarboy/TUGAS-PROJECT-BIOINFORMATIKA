@@ -5,31 +5,51 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-st.title("🔬 Aplikasi Pencocokan Urutan Biologis")
+st.title("🔬 Pencocokan Urutan Biologis")
+st.write("Aplikasi ini membandingkan dua urutan DNA atau protein untuk melihat seberapa mirip mereka satu sama lain.")
 
-uploaded_file1 = st.file_uploader("Upload File FASTA Urutan 1", type=["fasta", "txt"])
-uploaded_file2 = st.file_uploader("Upload File FASTA Urutan 2", type=["fasta", "txt"])
+# Upload File
+file1 = st.file_uploader("📄 Upload Urutan Pertama (format .txt atau .fasta)", type=["txt", "fasta"])
+file2 = st.file_uploader("📄 Upload Urutan Kedua (format .txt atau .fasta)", type=["txt", "fasta"])
 
-if uploaded_file1 and uploaded_file2:
-    seq1 = read_fasta(uploaded_file1)
-    seq2 = read_fasta(uploaded_file2)
+if file1 and file2:
+    seq1 = read_fasta(file1)
+    seq2 = read_fasta(file2)
 
-    st.write(f"Urutan 1 ({len(seq1)} nt): {seq1[:50]}...")
-    st.write(f"Urutan 2 ({len(seq2)} nt): {seq2[:50]}...")
+    st.write(f"📌 Panjang Urutan 1: **{len(seq1)}** karakter")
+    st.write(f"📌 Panjang Urutan 2: **{len(seq2)}** karakter")
 
-    algo = st.radio("Pilih Algoritma:", ["Global Alignment (Needleman-Wunsch)", "Local Alignment (Smith-Waterman)"])
-    match = st.number_input("Skor Match", 1)
-    mismatch = st.number_input("Penalti Mismatch", -3)
-    gap = st.number_input("Penalti Gap", -2)
+    # Pilihan algoritma
+    algo = st.radio("🔧 Pilih Cara Perbandingan Urutan:", 
+                    ["Global (cocokkan seluruh urutan)", "Local (cocokkan bagian yang paling mirip)"])
 
-    if st.button("Jalankan Alignment"):
+    match = st.number_input("✅ Skor Jika Sama", value=1)
+    mismatch = st.number_input("❌ Skor Jika Beda", value=-1)
+    gap = st.number_input("➖ Penalti Jika Ada Celah", value=-2)
+
+    if st.button("🚀 Jalankan Perbandingan"):
         if algo.startswith("Global"):
-            score_matrix, final_score = needleman_wunsch(seq1, seq2, match, mismatch, gap)
+            matrix, score = needleman_wunsch(seq1, seq2, match, mismatch, gap)
         else:
-            score_matrix, final_score = smith_waterman(seq1, seq2, match, mismatch, gap)
-        
-        st.success(f"Skor Alignment: {final_score}")
-        
+            matrix, score = smith_waterman(seq1, seq2, match, mismatch, gap)
+
+        st.success(f"💡 Hasil Skor Kemiripan: **{score}**")
+
+        st.write("📖 **Penjelasan Hasil (Bahasa Sederhana):**")
+        st.markdown(f"""
+        - Semakin tinggi skor, berarti kedua urutan **semakin mirip**.
+        - Skor positif menunjukkan banyak bagian dari urutan yang **sama**.
+        - Jika skor rendah atau negatif, maka urutannya **berbeda atau tidak cocok** satu sama lain.
+        - Cara pencocokan yang kamu pilih adalah **"{algo}"**.
+        """)
+
+        # Visualisasi Heatmap
+        st.write("📊 Gambar di bawah menunjukkan seberapa cocok setiap bagian dari kedua urutan.")
         fig, ax = plt.subplots()
-        sns.heatmap(np.array(score_matrix), ax=ax, cmap="YlGnBu")
+        sns.heatmap(np.array(matrix), ax=ax, cmap="YlGnBu", cbar_kws={'label': 'Skor Kecocokan'})
+        ax.set_xlabel("Urutan Kedua")
+        ax.set_ylabel("Urutan Pertama")
         st.pyplot(fig)
+else:
+    st.info("Silakan upload dua file urutan untuk memulai.")
+
